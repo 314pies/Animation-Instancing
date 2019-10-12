@@ -24,10 +24,21 @@ namespace AnimationInstancing
         public BoundingSphere boundingSpere;
         public bool visible { get; set; }
         public AnimationInstancing parentInstance { get; set; }
-
         public float playSpeed = 1.0f;
+        public UnityEngine.Rendering.ShadowCastingMode shadowCastingMode;
+        public bool receiveShadow;
         [NonSerialized]
-        public bool loop = true;
+        public int layer;
+        float speedParameter = 1.0f, cacheParameter = 1.0f;
+        WrapMode wrapMode;
+        public WrapMode Mode
+        {
+             get {return wrapMode;}
+             set {wrapMode = value;}
+        }
+        public bool IsLoop() { return Mode == WrapMode.Loop; }
+        public bool IsPause() { return speedParameter == 0.0f; }
+
         public bool applyRootMotion = false;
         [Range(1, 4)]
         public int bonePerVertex = 4;
@@ -47,15 +58,12 @@ namespace AnimationInstancing
         float transitionTimer = 0.0f;
         [NonSerialized]
         public float transitionProgress = 0.0f;
-        //[NonSerialized]
-        //public int packageIndex;
         private int eventIndex = -1;
 
         public List<AnimationInfo> aniInfo;
         private ComparerHash comparer;
         private AnimationInfo searchInfo;
         private AnimationEvent aniEvent = null;
-
         public class LodInfo
         {
             public int lodLevel;
@@ -63,6 +71,7 @@ namespace AnimationInstancing
             public MeshRenderer[] meshRenderer;
             public MeshFilter[] meshFilter;
             public AnimationInstancingMgr.VertexCache[] vertexCacheList;
+            public AnimationInstancingMgr.MaterialBlock[] materialBlockList;
         }
         [NonSerialized]
         public LodInfo[] lodInfo;
@@ -72,6 +81,7 @@ namespace AnimationInstancing
         public int lodLevel;
         private Transform[] allTransforms;
         private bool isMeshRender = false;
+        [NonSerialized]
         private List<AnimationInstancing> listAttachment;
 
         void Start()
@@ -86,6 +96,7 @@ namespace AnimationInstancing
             animator = GetComponent<Animator>();
             boundingSpere = new BoundingSphere(new Vector3(0, 0, 0), 1.0f);
             listAttachment = new List<AnimationInstancing>();
+            layer = gameObject.layer;
 
             switch (QualitySettings.blendWeights)
             {
@@ -113,6 +124,7 @@ namespace AnimationInstancing
                     LodInfo info = new LodInfo();
                     info.lodLevel = i;
                     info.vertexCacheList = new AnimationInstancingMgr.VertexCache[lods[i].renderers.Length];
+                    info.materialBlockList = new AnimationInstancingMgr.MaterialBlock[info.vertexCacheList.Length];
                     List<SkinnedMeshRenderer> listSkinnedMeshRenderer = new List<SkinnedMeshRenderer>();
                     List<MeshRenderer> listMeshRenderer = new List<MeshRenderer>();
                     foreach (var render in lods[i].renderers)
@@ -142,6 +154,7 @@ namespace AnimationInstancing
                 info.meshRenderer = GetComponentsInChildren<MeshRenderer>();
                 info.meshFilter = GetComponentsInChildren<MeshFilter>();
                 info.vertexCacheList = new AnimationInstancingMgr.VertexCache[info.skinnedMeshRenderer.Length + info.meshRenderer.Length];
+                info.materialBlockList = new AnimationInstancingMgr.MaterialBlock[info.vertexCacheList.Length];
                 lodInfo[0] = info;
 
                 for (int j = 0; j != info.meshRenderer.Length; ++j)
@@ -242,7 +255,7 @@ namespace AnimationInstancing
         public void Prepare(List<AnimationInfo> infoList, ExtraBoneInfo extraBoneInfo)
         {
             aniInfo = infoList;
-            extraBoneInfo = extraBoneInfo;
+            //extraBoneInfo = extraBoneInfo;
             List<Matrix4x4> bindPose = new List<Matrix4x4>(150);
             // to optimize, MergeBone don't need to call every time
             Transform[] bones = RuntimeHelper.MergeBone(lodInfo[0].skinnedMeshRenderer, bindPose);
@@ -273,6 +286,16 @@ namespace AnimationInstancing
                 allTransforms,
                 bindPose,
                 bonePerVertex);
+
+            foreach (var lod in lodInfo)
+            {
+                foreach (var cache in lod.vertexCacheList)
+                {
+                    cache.shadowcastingMode = shadowCastingMode;
+                    cache.receiveShadow = receiveShadow;
+                    cache.layer = layer;
+                }
+            }
 
             Destroy(GetComponent<Animator>());
             //Destroy(GetComponentInChildren<SkinnedMeshRenderer>());
@@ -315,7 +338,7 @@ namespace AnimationInstancing
             {
                 return;
             }
-            if (animationIndex == aniIndex)
+            if (animationIndex == aniIndex && !IsPause())
             {
                 return;
             }
@@ -333,6 +356,8 @@ namespace AnimationInstancing
                 eventIndex = -1;
                 preAniTextureIndex = aniTextureIndex;
                 aniTextureIndex = aniInfo[aniIndex].textureIndex;
+                wrapMode = aniInfo[aniIndex].wrapMode;
+                speedParameter = 1.0f;
             }
             else
             {
@@ -363,6 +388,17 @@ namespace AnimationInstancing
                 transitionProgress = 1.0f;
             }
             transitionDuration = duration;
+        }
+
+        public void Pause()
+        {
+            cacheParameter = speedParameter;
+            speedParameter = 0.0f;
+        }
+
+        public void Resume()
+        {
+            speedParameter = cacheParameter;
         }
 
         public void Stop()
@@ -403,7 +439,7 @@ namespace AnimationInstancing
 
         public void UpdateAnimation()
         {
-            if (aniInfo == null)
+            if (aniInfo == null || IsPause())
                 return;
 
             if (isInTransition)
@@ -418,17 +454,45 @@ namespace AnimationInstancing
                     preAniFrame = -1;
                 }
             }
-            curFrame += playSpeed * Time.deltaTime * aniInfo[aniIndex].fps;
+            float speed = playSpeed * speedParameter;
+            curFrame += speed * Time.deltaTime * aniInfo[aniIndex].fps;
             int totalFrame = aniInfo[aniIndex].totalFrame;
-            if (loop)
+            switch (wrapMode)
             {
-                if (curFrame < 0f)
-                    curFrame += (totalFrame - 1);
-                else if (curFrame > totalFrame - 1)
-                    curFrame -= (totalFrame - 1);
+                case WrapMode.Loop:
+                {
+                    if (curFrame < 0f)
+                        curFrame += (totalFrame - 1);
+                    else if (curFrame > totalFrame - 1)
+                        curFrame -= (totalFrame - 1);
+                    break;
+                }
+                case WrapMode.PingPong:
+                {
+                    if (curFrame < 0f)
+                    {
+                        speedParameter = Mathf.Abs(speedParameter);
+                        curFrame = Mathf.Abs(curFrame);
+                    }
+                    else if (curFrame > totalFrame - 1)
+                    {
+                        speedParameter = -Mathf.Abs(speedParameter);
+                        curFrame = 2 * (totalFrame - 1) - curFrame;
+                    }
+                    break;
+                }
+                case WrapMode.Default:
+                case WrapMode.Once:
+                {
+                    if (curFrame < 0f || curFrame > totalFrame - 1.0f)
+                    {
+                        Pause();
+                    }
+                    break;
+                }
             }
-            curFrame = Mathf.Clamp(curFrame, 0f, totalFrame - 1);
 
+            curFrame = Mathf.Clamp(curFrame, 0f, totalFrame - 1);
             for (int i = 0; i != listAttachment.Count; ++i)
             {
                 AnimationInstancing attachment = listAttachment[i];

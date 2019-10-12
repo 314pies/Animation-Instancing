@@ -187,7 +187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af9a3df90327743ef8c07bd5739a91ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  index: 1
+  index: 2
   crossFadeDur: 0.3
 --- !u!1 &1099384901
 GameObject:
