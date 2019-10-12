@@ -224,8 +224,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f47bf4169ec5dd4cbf530cf6929eeab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prototype: {fileID: 0}
+  prototype: {fileID: 1112853729687468}
   playSpeed: 1
+  shadowCastingMode: 0
+  receiveShadow: 0
   applyRootMotion: 0
   bonePerVertex: 4
 --- !u!1 &1116619263093916

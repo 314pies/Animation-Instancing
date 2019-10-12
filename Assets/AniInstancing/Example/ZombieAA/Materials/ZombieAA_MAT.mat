@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ZombieAA_MAT
-  m_Shader: {fileID: 4800000, guid: 4b25f1565116aac4b80a4eafec0481a2, type: 3}
+  m_Shader: {fileID: 4800000, guid: 2766aa9a758f9394aa3f1f471b711912, type: 3}
   m_ShaderKeywords: _METALLICGLOSSMAP _NORMALMAP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
