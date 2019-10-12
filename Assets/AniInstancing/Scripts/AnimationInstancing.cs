@@ -364,7 +364,7 @@ namespace AnimationInstancing
                 Debug.LogWarning("The requested animation index is out of the count.");
                 return;
             }
-            RefreshAttachmentAnimation(animationIndex);
+            RefreshAttachmentAnimation(aniTextureIndex);
         }
 
         public void CrossFade(string animationName, float duration)
@@ -578,30 +578,29 @@ namespace AnimationInstancing
                 Debug.LogError("Can't find the bone.");
                 return;
             }
+            if (attachment.lodInfo[0].meshRenderer.Length == 0 && attachment.lodInfo[0].skinnedMeshRenderer.Length == 0)
+            {
+                Debug.LogError("The attachment doesn't have a Renderer");
+                return;
+            }
 
             attachment.parentInstance = this;
-            
             AnimationInstancingMgr.VertexCache parentCache = AnimationInstancingMgr.Instance.FindVertexCache(lodInfo[0].skinnedMeshRenderer[0].name.GetHashCode());
             listAttachment.Add(attachment);
-
-            int skinnedMeshRenderCount = attachment.lodInfo[0].skinnedMeshRenderer.Length;
-            int nameCode = attachment.lodInfo[0].meshRenderer[0].name.GetHashCode() + boneName.GetHashCode();
+            
+            int nameCode = boneName.GetHashCode();
+            nameCode += attachment.lodInfo[0].meshRenderer.Length > 0? attachment.lodInfo[0].meshRenderer[0].name.GetHashCode(): 0;
+            if (attachment.lodInfo[0].meshRenderer.Length == 0)
+            {
+                //todo, to support the attachment that has skinnedMeshRenderer;
+                int skinnedMeshRenderCount = attachment.lodInfo[0].skinnedMeshRenderer.Length;
+                nameCode += skinnedMeshRenderCount > 0? attachment.lodInfo[0].skinnedMeshRenderer[0].name.GetHashCode(): 0;
+            }
             AnimationInstancingMgr.VertexCache cache = AnimationInstancingMgr.Instance.FindVertexCache(nameCode);
             // if we can reuse the VertexCache, we don't need to create one
-            if (cache != null && cache.boneTextureIndex >= 0 
-                && cache.boneTextureIndex == parentCache.boneTextureIndex
-                && cache.boneIndex[0].x == index)
+            if (cache != null)
             {
-                for (int i = 0; i != attachment.lodInfo.Length; ++i)
-                {
-                    LodInfo info = attachment.lodInfo[i];
-                    for (int j = 0; j != info.meshRenderer.Length; ++j)
-                    {
-                        nameCode = info.meshRenderer[j].name.GetHashCode() + boneName.GetHashCode();
-                        cache = AnimationInstancingMgr.Instance.FindVertexCache(nameCode);
-                        info.vertexCacheList[info.skinnedMeshRenderer.Length + j] = cache;
-                    }
-                }
+                cache.boneTextureIndex = parentCache.boneTextureIndex;
                 return;
             }
 
@@ -626,7 +625,7 @@ namespace AnimationInstancing
                     }
                     Debug.Assert(cache.boneTextureIndex < 0 || cache.boneIndex[0].x != index);
 
-                    AnimationInstancingMgr.Instance.BindAttachment(parentCache, info.meshFilter[j].sharedMesh, index);
+                    AnimationInstancingMgr.Instance.BindAttachment(parentCache, cache, info.meshFilter[j].sharedMesh, index);
                     AnimationInstancingMgr.Instance.SetupAdditionalData(cache);
                     cache.boneTextureIndex = parentCache.boneTextureIndex;
                 }
@@ -652,6 +651,7 @@ namespace AnimationInstancing
             for (int k = 0; k != listAttachment.Count; ++k)
             {
                 AnimationInstancing attachment = listAttachment[k];
+                //attachment.aniIndex = aniIndex;
                 for (int i = 0; i != attachment.lodInfo.Length; ++i)
                 {
                     LodInfo info = attachment.lodInfo[i];
@@ -663,7 +663,6 @@ namespace AnimationInstancing
                     }
                 }
             }
-
         }
     }
 }
