@@ -1,0 +1,14 @@
+﻿<Properties StartupConfiguration="{AFD641CC-F967-E0C8-F6D0-1F0EBF53D26B}|">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/TEssttTemmp.cs">
+    <Files>
+      <File FileName="Assets/TEssttTemmp.cs" Line="1" Column="1" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="f7e0d8c0-f4e9-41cb-a834-218afd760c0c" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MultiItemStartupConfigurations />
+</Properties>
