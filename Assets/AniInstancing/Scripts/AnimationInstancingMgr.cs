@@ -158,9 +158,9 @@ namespace AnimationInstancing
                                 InstanceData data = block.Value.instanceData; 
                                 if (useInstancing)
                                 {
-#if UNITY_EDITOR
+//#if UNITY_EDITOR
                                     PreparePackageMaterial(package, vertexCache, k);
-#endif
+//#endif
                                     package.propertyBlock.SetFloatArray("frameIndex", data.frameIndex[k][i]);
                                     package.propertyBlock.SetFloatArray("preFrameIndex", data.preFrameIndex[k][i]);
                                     package.propertyBlock.SetFloatArray("transitionProgress", data.transitionProgress[k][i]);

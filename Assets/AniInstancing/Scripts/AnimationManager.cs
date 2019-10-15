@@ -149,16 +149,21 @@ namespace AnimationInstancing
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_STANDALONE_OSX
-            //Debug.Log("This is the data path:" + path);
-            FileStream file = File.Open(path + prefab.name + ".bytes", FileMode.Open);
-            Debug.Assert(file.CanRead);
+            Debug.Log("This is the data path:" + path);
+            Debug.Log(prefab.name);
+
+            //FileStream file = File.Open(path + prefab.name + ".bytes", FileMode.Open);
+            //Debug.Assert(file.CanRead);
             InstanceAnimationInfo info = new InstanceAnimationInfo();
-            BinaryReader reader = new BinaryReader(file);
+            //BinaryReader reader = new BinaryReader(file);
+            TextAsset asset = Resources.Load(prefab.name) as TextAsset;
+            Debug.Log(asset.bytes.Length);
+            BinaryReader reader = new BinaryReader(new MemoryStream(asset.bytes));
             info.listAniInfo = ReadAnimationInfo(reader);
             info.extraBoneInfo = ReadExtraBoneInfo(reader);
             m_animationInfo.Add(prefab, info);
             AnimationInstancingMgr.Instance.ImportAnimationTexture(prefab.name, reader);
-            file.Close();
+            //file.Close();
 #elif UNITY_IPHONE
 		    path = "file://" + Application.dataPath +"/Raw/AnimationTexture/";
 		    WWW w = new WWW(path + prefab.name + ".bytes");
